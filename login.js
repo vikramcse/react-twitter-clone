@@ -14,14 +14,14 @@ var cookieParser = require('cookie-parser');
 var session = require('express-session');
 
 var hash = function(password) {
-    return crypto.createhash('sha512').update(password).digest('hex');
+    return crypto.createHash('sha512').update(password).digest('hex');
 };
 
 passport.use(new LocalStrategy(function(username, password, done) {
     var user = users.where({
         username: username,
         passwordHash: hash(password)
-    }).items[0];
+    }).items[0]; // Item found
 
     if(user) {
         done(null, user);
@@ -55,4 +55,57 @@ router.get('/login', function(req, res) {
     res.render('login');
 });
 
+router.post('/signup', function(req, res) {
+    if(users.where({username: req.body.username}).items.length === 0) {
+        // uniqure
+        var user = {
+            fullname: req.body.fullname,
+            email: req.body.email,
+            username: req.body.username,
+            passwordHash: hash(req.body.password),
+            following:[]
+        }
+
+        var userId = users.insert(user);
+        req.login(users.get(userId), function(err) {
+            if(err) {
+                return next(err);
+            }
+            res.redirect('/');
+        });
+    } else {
+        // not a uniqure username
+        res.redirect('/login');
+    }
+});
+
+router.post('/login', passport.authenticate('local', {
+    successRedirect: '/',
+    failureRedirect: '/login'
+}));
+
+router.get('/logout', function(req, res) {
+    req.logout();
+    res.redirect('/login');
+});
+
+function loginRequired(req, res, next) {
+    if(req.isAuthenticated()) {
+        next();
+    } else {
+        res.redirect('/login');
+    }
+}
+
+function makeUserSafe(user) {
+    var safeUser = {};
+    var safeKeys = ['cid', 'username', 'email', 'fullname', 'following'];
+    safeKeys.forEach(function(key) {
+        safeUser[key] = user[key];
+    });
+    return safeUser;
+}
+
 exports.routes = router;
+exports.required = loginRequired;
+exports.safe = makeUserSafe;
