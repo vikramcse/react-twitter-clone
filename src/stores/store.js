@@ -1,12 +1,10 @@
 var assign = require('object-assign');
-var EventEmitterProto = require('event').EventEmitter.prototype;
+var EventEmitterProto = require('events').EventEmitter.prototype;
 var dispatcher = require('../dispatcher.js');
 var CHANGE_EVENT = 'CHANGE';
 
 var storeMethods = {
-    init: function() {
-
-    },
+    init: function() {},
     // set method will accepts array of objects
     // i.e the data or models.
     set: function(arr) {
@@ -47,13 +45,13 @@ var storeMethods = {
         this.emit(CHANGE_EVENT);
     },
 
-    bind: function(actionType, actionFn) {
+    bind: function (actionType, actionFn) {
         // if the current action type is already there
         // then append new action.
-        if(this.actions[actionType]) {
+        if (this.actions[actionType]) {
             this.actions[actionType].push(actionFn);
         } else {
-            this.actions[actionType] = actionFn;
+            this.actions[actionType] = [actionFn];
         }
     }
 };
@@ -73,13 +71,12 @@ exports.extend = function(methods) {
 
     // After initializing actions we need to register the actions to dispatcher
     dispatcher.register(function(action) {
-        if(store.actions[action.actionType]) {
-            store.actions[action.actionType].forEach(function(fn) {
-                fn.call(null, action.data);
+        if (store.actions[action.actionType]) {
+            store.actions[action.actionType].forEach(function (fn) {
+                fn.call(store, action.data);
             });
         }
     });
 
     return store;
-
 };
