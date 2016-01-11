@@ -45,6 +45,10 @@ var storeMethods = {
         this.emit(CHANGE_EVENT);
     },
 
+    // for binding and action to store
+    // so when an action is triggred the server
+    // gets notified, Here the actionFn runs
+    // when an action ouccurs.
     bind: function (actionType, actionFn) {
         // if the current action type is already there
         // then append new action.
